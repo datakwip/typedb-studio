@@ -1,0 +1,20 @@
+# Nixpacks configuration for TypeDB Studio
+# Critical: Initialize git submodules before build
+
+[phases.setup]
+nixPkgs = ["git"]
+cmds = ["git submodule update --init --recursive"]
+
+[phases.install]
+nixPkgs = ["nodejs_20", "pnpm"]
+cmds = ["pnpm install --frozen-lockfile"]
+
+[phases.build]
+nixPkgs = ["nodejs_20"]
+cmds = ["pnpm run build:prod"]
+
+[start]
+cmd = "npx serve -s dist/typedb-studio/browser -l $PORT"
+
+[variables]
+NODE_ENV = "production"
