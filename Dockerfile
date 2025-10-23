@@ -1,9 +1,9 @@
 # Multi-stage Dockerfile for TypeDB Studio
-# Stage 1: Build the application with git submodules initialized
+# Stage 1: Build the application
 
 FROM node:20-alpine AS builder
 
-# Install git for submodule initialization
+# Install required packages
 RUN apk add --no-cache git
 
 # Install pnpm
@@ -12,27 +12,14 @@ RUN npm install -g pnpm
 # Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-
-# Initialize git (required for submodules)
-COPY .git .git
-COPY .gitmodules .gitmodules
-
-# Initialize and update submodules
-RUN git submodule update --init --recursive
-
-# Copy the submodule content
-COPY typedb-web ./typedb-web
-
-# Install dependencies (this will include the typedb-web/common package)
-RUN pnpm install --frozen-lockfile
-
-# Copy application source
+# Copy everything including git files
 COPY . .
 
-# Build the application
-RUN pnpm run build:prod
+# Make build script executable
+RUN chmod +x build.sh
+
+# Run build script (initializes submodules and builds)
+RUN ./build.sh
 
 # Stage 2: Serve the static files
 FROM node:20-alpine
