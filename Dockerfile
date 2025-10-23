@@ -15,11 +15,15 @@ WORKDIR /app
 # Copy everything including git files
 COPY . .
 
-# Make build script executable
-RUN chmod +x build.sh
-
-# Run build script (initializes submodules and builds)
-RUN ./build.sh
+# Initialize git submodules and build
+RUN set -ex && \
+    echo "Initializing git submodules..." && \
+    git submodule update --init --recursive && \
+    echo "Installing dependencies..." && \
+    pnpm install --frozen-lockfile && \
+    echo "Building application..." && \
+    pnpm run build:prod && \
+    echo "Build complete!"
 
 # Stage 2: Serve the static files
 FROM node:20-alpine
@@ -35,5 +39,5 @@ COPY --from=builder /app/dist/typedb-studio/browser ./dist
 # Expose port (Railway sets PORT env var)
 EXPOSE 3000
 
-# Start command
-CMD ["serve", "-s", "dist", "-l", "3000"]
+# Start command - use Railway's PORT env var
+CMD sh -c "serve -s dist -l ${PORT:-3000}"
