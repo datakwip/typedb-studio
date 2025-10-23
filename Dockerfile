@@ -15,24 +15,18 @@ WORKDIR /app
 # Copy package files first for better caching
 COPY package.json pnpm-lock.yaml .npmrc* ./
 
-# Copy .gitmodules to know what submodules we need
-COPY .gitmodules* ./
-
-# Initialize git repository and add submodules
-# We need to do this because Railway doesn't copy .git directory
-RUN set -ex && \
-    git init && \
-    git config user.email "builder@railway.app" && \
-    git config user.name "Railway Builder" && \
-    # Add each submodule manually if .gitmodules exists
-    if [ -f .gitmodules ]; then \
-        # Clone typedb-web-common submodule
-        git clone --depth 1 https://github.com/typedb/typedb-web-common.git dependencies/typedb-web-common || \
-        git clone --depth 1 https://github.com/vaticle/typedb-web-common.git dependencies/typedb-web-common; \
-    fi
+# Initialize the typedb-web submodule directory
+# This is needed because Railway doesn't copy .git directory
+RUN mkdir -p typedb-web
 
 # Copy the rest of the application
 COPY . .
+
+# Clone the submodule (since Railway doesn't include .git)
+RUN set -ex && \
+    echo "Cloning typedb-web submodule..." && \
+    rm -rf typedb-web && \
+    git clone --depth 1 https://github.com/typedb/typedb-web.git typedb-web
 
 # Install dependencies and build
 RUN set -ex && \
